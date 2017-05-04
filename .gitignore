@@ -8,3 +8,5 @@
 *.so
 *.pyc
 *~
+/benchs/sift1M/*
+test.sh

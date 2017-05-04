@@ -49,20 +49,20 @@ def plot_OperatingPoints(ops, nq, **kwargs):
 #################################################################
 
 
+dataroot = '/home/limin/data'
 
 t0 = time.time()
 
 print "load data"
 
-xt = fvecs_read("sift1M/sift_learn.fvecs")
-xb = fvecs_read("sift1M/sift_base.fvecs")
-xq = fvecs_read("sift1M/sift_query.fvecs")
+xt = fvecs_read("{}/sift1M/sift_learn.fvecs".format(dataroot))
+xb = fvecs_read("{}/sift1M/sift_base.fvecs".format(dataroot))
+xq = fvecs_read("{}/sift1M/sift_query.fvecs".format(dataroot))
 
 d = xt.shape[1]
 
 print "load GT"
-
-gt = ivecs_read("sift1M/sift_groundtruth.ivecs")
+gt = ivecs_read("{}/sift1M/sift_groundtruth.ivecs".format(dataroot))
 gt = gt.astype('int64')
 k = gt.shape[1]
 
