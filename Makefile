@@ -14,7 +14,7 @@ MAKEFILE_INC=makefile.inc
 
 LIBNAME=libfaiss
 
-all: .env_ok $(LIBNAME).a tests/demo_ivfpq_indexing
+all: .env_ok $(LIBNAME).a tests/demo_ivfpq_indexing objects
 
 py: _swigfaiss.so
 
@@ -22,7 +22,8 @@ py: _swigfaiss.so
 
 #############################
 # Various
-
+objects:
+	mkdir -p objects
 
 LIBOBJ=hamming.o  utils.o \
        IndexFlat.o IndexIVF.o IndexLSH.o IndexPQ.o  \
@@ -31,7 +32,8 @@ LIBOBJ=hamming.o  utils.o \
        PolysemousTraining.o MetaIndexes.o Index.o \
        ProductQuantizer.o AutoTune.o AuxIndexStructures.o
 
-
+LIBOBJ := $(addprefix objects/, $(LIBOBJ))
+INCLUDE := ./include
 $(LIBNAME).a: $(LIBOBJ)
 	ar r $(LIBNAME).a $^
 
@@ -41,9 +43,9 @@ $(LIBNAME).$(SHAREDEXT): $(LIBOBJ)
 .cpp.o:
 	$(CC) $(CFLAGS) -c $< -o $@ $(FLAGS) $(EXTRAFLAGS)
 
-utils.o:             EXTRAFLAGS=$(BLASCFLAGS)
-VectorTransform.o:   EXTRAFLAGS=$(BLASCFLAGS)
-ProductQuantizer.o:  EXTRAFLAGS=$(BLASCFLAGS)
+objects/utils.o:             EXTRAFLAGS=$(BLASCFLAGS)
+objects/VectorTransform.o:   EXTRAFLAGS=$(BLASCFLAGS)
+objects/ProductQuantizer.o:  EXTRAFLAGS=$(BLASCFLAGS)
 
 # for MKL, the flags when generating a dynamic lib are different from
 # the ones when making an executable, but by default they are the same
@@ -57,9 +59,8 @@ BLASLDFLAGSSO ?= $(BLASLDFLAGS)
 tests/test_blas: tests/test_blas.cpp
 	$(CC) $(CFLAGS) $< -o $@ $(BLASLDFLAGS) $(BLASCFLAGS)
 
-
 tests/demo_ivfpq_indexing: tests/demo_ivfpq_indexing.cpp $(LIBNAME).a
-	$(CC) -o $@ $(CFLAGS) $< $(LIBNAME).a $(LDFLAGS) $(BLASLDFLAGS)
+	$(CC) -o $@ $(CFLAGS) -I$(INCLUDE)  $< $(LIBNAME).a $(LDFLAGS) $(BLASLDFLAGS)
 
 tests/demo_sift1M: tests/demo_sift1M.cpp $(LIBNAME).a
 	$(CC) -o $@ $(CFLAGS) $< $(LIBNAME).a $(LDFLAGS) $(BLASLDFLAGS)
@@ -74,7 +75,7 @@ HFILES = IndexFlat.h Index.h IndexLSH.h IndexPQ.h IndexIVF.h \
     Clustering.h hamming.h AutoTune.h
 
 # also silently generates python/swigfaiss.py
-python/swigfaiss_wrap.cxx: swigfaiss.swig $(HFILES)
+python/swigfaiss_wrap.cxx: swigfaiss.swig $(INCLUDE)/$(HFILES)
 	$(SWIGEXEC) -python -c++ -Doverride= -o $@ $<
 
 
@@ -86,52 +87,17 @@ python/_swigfaiss.so: python/swigfaiss_wrap.cxx $(LIBNAME).a
 _swigfaiss.so: python/_swigfaiss.so
 	cp python/_swigfaiss.so python/swigfaiss.py .
 
-#############################
 # Dependencies
 
-# for i in *.cpp ; do gcc -I.. -MM $i -msse4; done
-AutoTune.o: AutoTune.cpp AutoTune.h Index.h FaissAssert.h utils.h Heap.h \
- IndexFlat.h VectorTransform.h IndexLSH.h IndexPQ.h ProductQuantizer.h \
- Clustering.h PolysemousTraining.h IndexIVF.h IndexIVFPQ.h MetaIndexes.h
-AuxIndexStructures.o: AuxIndexStructures.cpp AuxIndexStructures.h Index.h
-Clustering.o: Clustering.cpp Clustering.h Index.h utils.h Heap.h \
- FaissAssert.h IndexFlat.h
-hamming.o: hamming.cpp hamming.h Heap.h FaissAssert.h
-Heap.o: Heap.cpp Heap.h
-Index.o: Index.cpp IndexFlat.h Index.h FaissAssert.h
-IndexFlat.o: IndexFlat.cpp IndexFlat.h Index.h utils.h Heap.h \
- FaissAssert.h
-index_io.o: index_io.cpp index_io.h FaissAssert.h IndexFlat.h Index.h \
- VectorTransform.h IndexLSH.h IndexPQ.h ProductQuantizer.h Clustering.h \
- Heap.h PolysemousTraining.h IndexIVF.h IndexIVFPQ.h MetaIndexes.h
-IndexIVF.o: IndexIVF.cpp IndexIVF.h Index.h Clustering.h Heap.h utils.h \
- hamming.h FaissAssert.h IndexFlat.h AuxIndexStructures.h
-IndexIVFPQ.o: IndexIVFPQ.cpp IndexIVFPQ.h IndexIVF.h Index.h Clustering.h \
- Heap.h IndexPQ.h ProductQuantizer.h PolysemousTraining.h utils.h \
- IndexFlat.h hamming.h FaissAssert.h AuxIndexStructures.h
-IndexLSH.o: IndexLSH.cpp IndexLSH.h Index.h VectorTransform.h utils.h \
- Heap.h hamming.h FaissAssert.h
-IndexPQ.o: IndexPQ.cpp IndexPQ.h Index.h ProductQuantizer.h Clustering.h \
- Heap.h PolysemousTraining.h FaissAssert.h hamming.h
-MetaIndexes.o: MetaIndexes.cpp MetaIndexes.h Index.h FaissAssert.h Heap.h
-PolysemousTraining.o: PolysemousTraining.cpp PolysemousTraining.h \
- ProductQuantizer.h Clustering.h Index.h Heap.h utils.h hamming.h \
- FaissAssert.h
-ProductQuantizer.o: ProductQuantizer.cpp ProductQuantizer.h Clustering.h \
- Index.h Heap.h FaissAssert.h VectorTransform.h IndexFlat.h utils.h
-utils.o: utils.cpp utils.h Heap.h AuxIndexStructures.h Index.h \
- FaissAssert.h
-VectorTransform.o: VectorTransform.cpp VectorTransform.h Index.h utils.h \
- Heap.h FaissAssert.h IndexPQ.h ProductQuantizer.h Clustering.h \
- PolysemousTraining.h
-
+objects/%.o: src/%.cpp
+	$(CC) $(CFLAGS) $(BLASCFLAGS) -o $@ -I ./include -c $< 
 
 clean:
-	rm -f $(LIBNAME).a $(LIBNAME).$(SHAREDEXT)* *.o \
+	rm -f $(LIBNAME).a $(LIBNAME).$(SHAREDEXT)* objects/*.o \
 	   	lua/swigfaiss.so lua/swigfaiss_wrap.cxx \
 		python/_swigfaiss.so python/swigfaiss_wrap.cxx \
 		python/swigfaiss.py _swigfaiss.so swigfaiss.py
-
+	
 .env_ok:
 ifeq ($(wildcard $(MAKEFILE_INC)),)
 	$(error Cannot find $(MAKEFILE_INC). Did you forget to copy the relevant file from ./example_makefiles?)

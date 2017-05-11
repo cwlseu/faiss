@@ -17,9 +17,9 @@
 #include <sys/time.h>
 
 
-#include "../IndexIVFPQ.h"
-#include "../IndexFlat.h"
-#include "../index_io.h"
+#include "IndexIVFPQ.h"
+#include "IndexFlat.h"
+#include "index_io.h"
 
 double elapsed ()
 {
