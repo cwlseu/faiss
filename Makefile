@@ -74,14 +74,16 @@ HFILES = IndexFlat.h Index.h IndexLSH.h IndexPQ.h IndexIVF.h \
     PolysemousTraining.h Heap.h MetaIndexes.h AuxIndexStructures.h \
     Clustering.h hamming.h AutoTune.h
 
+
+HFILES := $(addprefix ./include/, $(HFILES))
 # also silently generates python/swigfaiss.py
-python/swigfaiss_wrap.cxx: swigfaiss.swig $(INCLUDE)/$(HFILES)
-	$(SWIGEXEC) -python -c++ -Doverride= -o $@ $<
+python/swigfaiss_wrap.cxx: swigfaiss.swig 
+	$(SWIGEXEC) -python -c++ -I./include -Doverride= -o $@ $<
 
 
 # extension is .so even on the mac
 python/_swigfaiss.so: python/swigfaiss_wrap.cxx $(LIBNAME).a
-	$(CC) -I. $(CFLAGS) $(LDFLAGS) $(PYTHONCFLAGS) $(SHAREDFLAGS) \
+	$(CC) -I./include $(CFLAGS) $(LDFLAGS) $(PYTHONCFLAGS) $(SHAREDFLAGS) \
 	-o $@ $^ $(BLASLDFLAGSSO)
 
 _swigfaiss.so: python/_swigfaiss.so
